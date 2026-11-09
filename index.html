@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Знакомство с Tesseract</title>
+<meta name="description" content="Поиск по свалке файлов, которая остаётся у вас на компьютере. Ранняя версия.">
+<meta property="og:title" content="Знакомство с Tesseract">
+<meta property="og:description" content="Поиск по свалке файлов, которая остаётся у вас на компьютере. Ранняя версия.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cousine:ital,wght@0,400;0,700&family=IM+Fell+English+SC&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+body{margin:0}[hidden]{display:none!important}
+:root {
+  --paper:#F1ECE1; --card:#FAF7F0; --ink:#221F1A; --soft:#4B463D; --muted:#6B6459; --faint:#7C7467;
+  --rule:#DCD4C4; --well:#F0EADD; --rail:#EBE4D6;
+  --accent:#3E6455; --accent-strong:#2B4639; --accent-dim:#E3EAE4; --on-accent:#F7F3EA;
+  --signal:#9C3B26; --signal-dim:#F3E3DC; --jute:#6B5434; --jute-dim:#E8DCC1;
+  --plate:#2E2B25; --on-plate:#CFC6B2;
+  --date:#7A5A10; --date-bg:#F1E3BC; --sum:#9A4C18; --sum-bg:#F6DFCB; --contact:#2F5A6C; --contact-bg:#D7E5EA;
+  --bar1:#2B4639; --bar2:#6E9983; --bar3:#BCD0C3; --bar1-text:#F7F3EA;
+  --display:"IM Fell English SC","Times New Roman",serif;
+  --head:"Cousine","Courier New",monospace;
+  --body:"PT Serif",Georgia,"Times New Roman",serif;
+  --mono:"Cousine","Courier New",monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper:#1B1916; --card:#2A2723; --ink:#E8E2D4; --soft:#C4BCAC; --muted:#A8A090; --faint:#928A7B;
+  --rule:#3A362F; --well:#171410; --rail:#22201C;
+  --accent:#7FAE99; --accent-strong:#9CC9B4; --accent-dim:#26332D; --on-accent:#14211B;
+  --signal:#E08468; --signal-dim:#3A231B; --jute:#D0B27F; --jute-dim:#3D3322;
+  --plate:#090807; --on-plate:#CFC6B2;
+  --date:#E3C26E; --date-bg:#3A2F14; --sum:#E9A071; --sum-bg:#3D2616; --contact:#8FC0D2; --contact-bg:#1E3039;
+  --bar1:#BFE0CE; --bar2:#7FAE99; --bar3:#3F5F50; --bar1-text:#14211B;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --paper:#1B1916; --card:#2A2723; --ink:#E8E2D4; --soft:#C4BCAC; --muted:#A8A090; --faint:#928A7B;
+  --rule:#3A362F; --well:#171410; --rail:#22201C;
+  --accent:#7FAE99; --accent-strong:#9CC9B4; --accent-dim:#26332D; --on-accent:#14211B;
+  --signal:#E08468; --signal-dim:#3A231B; --jute:#D0B27F; --jute-dim:#3D3322;
+  --plate:#090807; --on-plate:#CFC6B2;
+  --date:#E3C26E; --date-bg:#3A2F14; --sum:#E9A071; --sum-bg:#3D2616; --contact:#8FC0D2; --contact-bg:#1E3039;
+  --bar1:#BFE0CE; --bar2:#7FAE99; --bar3:#3F5F50; --bar1-text:#14211B;
+  color-scheme: dark;
+}
+* { box-sizing:border-box; }
+body { background:var(--paper); color:var(--ink); font:17px/1.6 var(--body); }
+.page { max-width:1060px; margin:0 auto; padding-block:28px 72px;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex; flex-direction:column; gap:56px; }
+.top { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.mark { font:30px/1 var(--display); display:flex; gap:.34em; color:var(--ink); }
+.chip { font:13px/1.3 var(--mono); padding:5px 11px; border-radius:999px; background:var(--rail); color:var(--soft); }
+h1,h2,h3 { font-family:var(--head); font-weight:700; text-wrap:balance; margin:0; }
+h1 { font-size:clamp(28px,4.4vw,42px); line-height:1.16; letter-spacing:-.01em; max-width:24ch; }
+h2 { font-size:24px; line-height:1.25; }
+h3 { font-size:17px; line-height:1.3; }
+p { margin:0; }
+a { color:var(--accent); }
+code { font:.86em var(--mono); background:var(--well); padding:1px 5px; border-radius:4px; overflow-wrap:anywhere; }
+button,textarea { font:inherit; color:inherit; }
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.hero { display:flex; flex-direction:column; gap:18px; margin-top:-16px; }
+.lead { font-size:20px; line-height:1.5; max-width:60ch; color:var(--soft); }
+.toc { display:flex; flex-wrap:wrap; gap:6px 18px; font:14px/1.5 var(--mono); }
+section.block { display:flex; flex-direction:column; gap:16px; scroll-margin-top:16px; }
+.prose { max-width:66ch; }
+div.prose { display:flex; flex-direction:column; gap:12px; }
+.quiet { color:var(--muted); font-size:15.5px; }
+
+.short { display:grid; grid-template-columns:150px minmax(0,1fr); gap:14px 22px; margin:0; max-width:820px; }
+.short dt { font:700 14px/1.6 var(--mono); color:var(--accent); }
+.short dd { margin:0; }
+
+.belt { background:var(--card); border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:16px; box-shadow:0 1px 2px rgba(46,43,37,.12); }
+.tabs { display:flex; flex-wrap:wrap; gap:6px; }
+.tab { border:1px solid var(--rule); background:transparent; border-radius:999px; padding:5px 12px; font:13.5px/1.3 var(--mono); cursor:pointer; color:var(--soft); }
+.tab[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+.stations-wrap { overflow-x:auto; }
+.stations { list-style:none; margin:0; padding:2px; display:grid; grid-auto-flow:column; grid-auto-columns:minmax(104px,1fr); gap:0; }
+.stations li { position:relative; }
+.stations li + li::before { content:""; position:absolute; left:calc(-50% + 18px); right:calc(50% + 18px); top:19px; height:2px; background:var(--rule); }
+.stations li.done + li::before, .stations li.done + li.now::before { background:var(--accent); }
+.st { width:100%; background:none; border:0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; padding:4px 2px; color:var(--muted); font:13px/1.25 var(--mono); }
+.st b { width:32px; height:32px; border-radius:50%; display:grid; place-items:center; background:var(--rail); color:var(--soft); font:700 14px/1 var(--mono); position:relative; z-index:1; }
+.done .st b { background:var(--accent-dim); color:var(--accent-strong); }
+.now .st b { background:var(--accent); color:var(--on-accent); }
+.now .st { color:var(--ink); font-weight:700; }
+.stage { display:flex; flex-direction:column; gap:12px; min-height:320px; }
+.stage .lead2 { max-width:72ch; }
+.io { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; }
+.pane { background:var(--well); border-radius:10px; padding:12px 14px; min-width:0; display:flex; flex-direction:column; gap:8px; }
+.pane-h { font:12.5px/1.3 var(--mono); color:var(--muted); }
+.txt { font:13.5px/1.6 var(--mono); white-space:pre-wrap; overflow-wrap:anywhere; margin:0; }
+.plate { background:var(--plate); color:var(--on-plate); border-radius:3px; padding:0 4px; letter-spacing:.04em; }
+mark { color:inherit; border-radius:3px; padding:0 2px; }
+mark.sec { background:var(--signal-dim); color:var(--signal); }
+mark.f-date { background:var(--date-bg); color:var(--date); }
+mark.f-money { background:var(--sum-bg); color:var(--sum); }
+mark.f-phone, mark.f-email, mark.f-url { background:var(--contact-bg); color:var(--contact); }
+.rows { display:flex; flex-direction:column; gap:6px; font:13.5px/1.45 var(--mono); }
+.row2 { display:grid; grid-template-columns:minmax(0,auto) minmax(0,1fr); gap:10px; overflow-wrap:anywhere; }
+.row2 > :first-child { color:var(--muted); white-space:nowrap; }
+.piece { background:var(--card); border-radius:8px; padding:8px 10px; display:flex; flex-direction:column; gap:4px; }
+.piece-h { font:12.5px/1.3 var(--mono); color:var(--muted); display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.piece-h b { color:var(--accent-strong); }
+.bars { display:flex; align-items:center; gap:1px; height:30px; }
+.bars i { display:block; flex:1 1 0; background:var(--accent); border-radius:1px; min-width:1px; }
+.words { font:12.5px/1.5 var(--mono); color:var(--soft); overflow-wrap:anywhere; }
+.chain { display:flex; flex-direction:column; gap:4px; }
+.chain .piece + .arrow { margin:0; }
+.arrow { font:12px/1.2 var(--mono); color:var(--muted); padding-left:12px; }
+.note { background:var(--accent-dim); border-radius:8px; padding:9px 12px; font-size:15.5px; max-width:80ch; }
+.note.warn { background:var(--signal-dim); }
+.tech { font:12.5px/1.55 var(--mono); color:var(--muted); max-width:92ch; }
+.nav { display:flex; gap:8px; flex-wrap:wrap; }
+.btn { border:1px solid var(--rule); background:var(--card); border-radius:8px; padding:6px 13px; cursor:pointer; font:13.5px/1.3 var(--mono); }
+.btn.go { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+.btn:disabled { opacity:.45; cursor:default; }
+textarea { width:100%; min-height:130px; background:var(--well); border:1px solid var(--rule); border-radius:8px; padding:10px; font:13.5px/1.55 var(--mono); resize:vertical; }
+.own-h { font:13px/1.4 var(--mono); color:var(--muted); display:block; margin-bottom:6px; }
+
+figure { margin:0; display:flex; flex-direction:column; gap:8px; }
+figcaption { font-size:15px; color:var(--muted); max-width:72ch; }
+.svgwrap { overflow-x:auto; }
+.svgwrap svg { display:block; width:100%; height:auto; min-width:760px; color:var(--muted); }
+.g-node rect { fill:var(--card); stroke:var(--rule); stroke-width:1.5; }
+.belt .g-node rect { fill:var(--well); }
+.g-node text { fill:var(--ink); font:600 13px var(--head); }
+.g-node text.sub { fill:var(--muted); font:400 11.5px var(--mono); }
+.g-node.on rect { fill:var(--accent-dim); stroke:var(--accent); stroke-width:2.25; }
+.g-node.click { cursor:pointer; }
+.g-node.click:focus { outline:none; }
+.g-node.click:focus rect, .g-node.click:hover rect { stroke:var(--accent); }
+.g-edge { fill:none; stroke:var(--faint); stroke-width:1.4; }
+.g-edge.on { stroke:var(--accent); stroke-width:2.6; }
+.g-label { fill:var(--muted); font:400 11.5px var(--mono); }
+.g-label.on { fill:var(--accent-strong); font-weight:700; }
+.arrowhead { fill:var(--faint); }
+.arrowhead-on { fill:var(--accent); }
+
+.hits { display:flex; flex-direction:column; gap:8px; }
+.hit { background:var(--well); border-radius:8px; padding:9px 12px; display:flex; flex-direction:column; gap:3px; }
+.hit-h { display:flex; gap:10px; flex-wrap:wrap; font:13.5px/1.35 var(--mono); }
+.hit-h b { color:var(--ink); }
+.hit-h span { color:var(--accent-strong); }
+.side { max-width:76ch; }
+
+.legend { display:flex; flex-wrap:wrap; gap:6px 18px; font:13.5px/1.4 var(--mono); color:var(--soft); }
+.legend span { display:inline-flex; align-items:center; gap:7px; }
+.legend i { width:13px; height:13px; border-radius:3px; display:inline-block; }
+.chart { display:flex; flex-direction:column; gap:12px; position:relative; }
+.c-group { font:700 14.5px/1.35 var(--mono); }
+.c-group small { font:400 13px var(--mono); color:var(--muted); display:block; }
+.c-row { display:grid; grid-template-columns:230px minmax(0,1fr); gap:12px; align-items:center; }
+.c-name { font:13.5px/1.3 var(--mono); }
+.c-plot { position:relative; height:30px; }
+.c-grid { position:absolute; top:-4px; bottom:-4px; width:1px; background:var(--rule); }
+.c-bar { position:absolute; inset:0 auto 0 0; display:flex; gap:2px; height:100%; }
+.c-seg { height:100%; display:flex; align-items:center; padding-left:7px; font:700 13px/1 var(--mono); color:var(--bar1-text); cursor:default; min-width:0; }
+.c-seg:last-child { border-radius:0 4px 4px 0; }
+.c-end { position:absolute; top:0; height:100%; display:flex; align-items:center; font:13px/1 var(--mono); color:var(--soft); padding-left:6px; }
+.c-axis { display:grid; grid-template-columns:230px minmax(0,1fr); gap:12px; }
+.c-ticks { position:relative; height:16px; font:12px/1 var(--mono); color:var(--muted); }
+.c-ticks span { position:absolute; transform:translateX(-50%); }
+.c-ticks span:first-child { transform:none; }
+.c-ticks span:last-child { transform:translateX(-100%); }
+.tip { position:fixed; z-index:20; background:var(--plate); color:var(--on-plate); font:12.5px/1.4 var(--mono); padding:5px 9px; border-radius:6px; pointer-events:none; max-width:280px; }
+
+table { border-collapse:collapse; width:100%; font-size:15px; line-height:1.45; }
+.tw { overflow-x:auto; }
+th { font:700 13px/1.35 var(--mono); text-align:left; color:var(--muted); }
+th,td { padding:8px 12px 8px 0; border-bottom:1px solid var(--rule); vertical-align:top; }
+td.n,th.n { font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; font-family:var(--mono); font-size:14px; }
+.st-ok,.st-part,.st-no { font:700 12.5px/1.2 var(--mono); padding:3px 8px; border-radius:999px; white-space:nowrap; display:inline-block; }
+.st-ok { background:var(--accent-dim); color:var(--accent-strong); }
+.st-part { background:var(--jute-dim); color:var(--jute); }
+.st-no { background:var(--signal-dim); color:var(--signal); }
+
+.grid2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 32px; }
+.grid2 > div { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.grid2 h3 { font-size:16px; }
+.ol { margin:0; padding-left:22px; display:flex; flex-direction:column; gap:7px; max-width:74ch; }
+.ask { background:var(--accent-dim); border-radius:14px; padding:20px 22px; display:flex; flex-direction:column; gap:12px; }
+.panel { background:var(--card); border-radius:10px; padding:14px 16px; display:flex; flex-direction:column; gap:7px; min-height:150px; }
+.panel .mods { font:13px/1.5 var(--mono); color:var(--accent-strong); }
+footer { font:13px/1.5 var(--mono); color:var(--muted); }
+
+@media (max-width:720px) {
+  body { font-size:16px; }
+  .short { grid-template-columns:minmax(0,1fr); gap:2px; }
+  .short dd { margin-bottom:12px; }
+  .io, .grid2 { grid-template-columns:minmax(0,1fr); }
+  .c-row { grid-template-columns:minmax(0,1fr); gap:4px; }
+  .c-axis { grid-template-columns:minmax(0,1fr); }
+  .c-axis > :first-child { display:none; }
+  .lead { font-size:18px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .st b, .g-edge, .g-node rect { transition:background-color .18s, stroke .18s, stroke-width .18s, fill .18s; }
+}
+
+</style>
+</head>
+<body>
+<div class="page" id="app" data-tech="0">
+<header class="top">
+  <div class="mark" role="img" aria-label="Tesseract"><span aria-hidden="true">T</span><span aria-hidden="true">E</span><span aria-hidden="true">SS</span><span aria-hidden="true">E</span><span aria-hidden="true">R</span><span aria-hidden="true">ACT</span></div>
+  <span class="chip">Ранняя версия · ноябрь 2026</span>
+</header>
+
+<div class="hero">
+  <h1>Поиск по свалке файлов, которая остаётся у вас на компьютере</h1>
+  <p class="lead">Tesseract читает папки с документами, письмами, конфигами и кодом, запоминает, что в них написано, и находит нужное по словам или по смыслу. Раскладывать файлы заранее не нужно.</p>
+  <nav class="toc" aria-label="Разделы">
+    <a href="#short">Коротко</a><a href="#belt-sec">Что происходит с файлом</a><a href="#search-sec">Как идёт поиск</a><a href="#numbers">Точность</a><a href="#can">Возможности</a><a href="#ideas">Принципы</a><a href="#not-yet">Чего пока нет</a><a href="#help">Что нужно от вас</a>
+  </nav>
+</div>
+
+<section class="block" id="short">
+  <h2>Коротко</h2>
+  <dl class="short">
+    <dt>Для кого</dt><dd>Для бухгалтеров, юристов, нотариусов, разработчиков и всех, у кого годами копятся файлы, которые неудобно или нельзя отправлять в облачные сервисы.</dd>
+    <dt>Что читает</dt><dd>PDF, Word, PowerPoint, письма, содержимое архивов, код и конфиги в 19 языках и форматах. Вы указываете папку, дальше программа разбирает её сама.</dd>
+    <dt>Что находит</dt><dd>Текст по точным словам и по смыслу. Даты, суммы, телефоны и адреса выделяются сами, а файлы с одним редким контактом связываются между собой.</dd>
+    <dt>Что с данными</dt><dd>Всё считается на вашем компьютере. Программа только читает файлы и никогда их не меняет. Пароли, ключи и номера карт закрываются ещё до индекса.</dd>
+    <dt>В каком виде</dt><dd>Программа для Windows с окном и командной строкой. Сейчас её нужно проверить на больших настоящих архивах.</dd>
+  </dl>
+</section>
+
+<section class="block" id="why">
+  <h2>Зачем это</h2>
+  <div class="prose">
+    <p>Договоры, счета, переписка, выгрузки и конфиги лежат по всему компьютеру. Разложить их руками некогда, а многое нельзя показывать чужому сервису. Даже когда можно, жаль тратить на поиск лимит облачной нейросети.</p>
+    <p>Tesseract работает с тем, что уже накопилось. Obsidian хранит то, что вы напечатали сами, а обычный поиск по файлам сверяет слова и не знает, где в документе сумма, а где срок. Здесь папка становится базой знаний без ручной разметки.</p>
+  </div>
+</section>
+
+<section class="block" id="belt-sec">
+  <h2>Что происходит с файлом</h2>
+  <p class="prose">Выберите пример или вставьте свой текст и пройдите по станциям. На странице работает упрощённая копия правил программы. Ваш текст никуда не отправляется.</p>
+  <div class="belt" id="belt">
+    <div class="tabs" id="tabs" aria-label="Примеры файлов"></div>
+    <div class="stations-wrap"><ol class="stations" id="stations"></ol></div>
+    <div id="own-wrap" hidden><label class="own-h" for="own">Ваш текст остаётся на этой странице</label><textarea id="own" spellcheck="false"></textarea></div>
+    <div class="stage">
+      <h3 id="st-title"></h3>
+      <p class="lead2" id="st-lead"></p>
+      <div class="io">
+        <div class="pane"><div class="pane-h">На входе</div><div id="st-in"></div></div>
+        <div class="pane"><div class="pane-h">На выходе</div><div id="st-out"></div></div>
+      </div>
+      
+      <div class="nav"><button class="btn" id="st-prev">Назад</button><button class="btn" id="st-next">Дальше</button><button class="btn go" id="st-play">Прогнать с начала</button></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="search-sec">
+  <h2>Как идёт поиск</h2>
+  <p class="prose">Точные слова работают надёжнее, поэтому идут первыми. Модель подключается, когда вы формулируете иначе, чем написано в файле. Нажмите на запрос и посмотрите, каким путём он пройдёт. Выдача здесь заготовлена на примере.</p>
+  <div class="belt">
+    <div class="tabs" id="q-tabs" aria-label="Примеры запросов"></div>
+    <figure>
+      <div class="svgwrap" id="route"></div>
+      <figcaption>Запрос всегда сверяется с заметками. Дальше путь зависит от того, встретились ли все его слова в одном куске текста.</figcaption>
+    </figure>
+    <p class="note side" id="q-side"></p>
+    <div class="hits" id="q-hits"></div>
+    
+  </div>
+</section>
+
+<section class="block" id="numbers">
+  <h2>Насколько хорошо находит</h2>
+  <figure><div class="belt"><div class="legend" aria-hidden="true"><span><i style="background:var(--bar1)"></i>файл первым</span><span><i style="background:var(--bar2)"></i>в первой тройке</span><span><i style="background:var(--bar3)"></i>в первой десятке</span></div><div class="chart" data-chart='[{"title": "Спрашиваете своими словами", "sub": "2 152 вопроса к файлам, которых не было в обучении", "rows": [{"name": "Только слова, без модели", "v": [15.9, 24.2, 32.9]}, {"name": "Весь поиск, общая модель", "v": [43.0, 57.3, 72.2]}, {"name": "Весь поиск, своя модель", "v": [44.2, 59.4, 76.0]}]}, {"title": "Помните слова из файла", "sub": "256 запросов, составленных из слов самого кода", "rows": [{"name": "Весь поиск", "v": [94.1, 99.2, 100]}]}]'></div></div><figcaption>Доля запросов, где нужный файл оказался на этом месте. Длина полосы равна доле попаданий в первую десятку.</figcaption></figure>
+  <div class="prose">
+    <p>Вопросы своими словами написала языковая модель к файлам автора, которые не участвовали в обучении. Файлы там в основном с кодом, а настоящих отмеченных вопросов пока 24: на 22 нужный файл был первым. Этого мало для выводов, поэтому нужны большие архивы других людей.</p>
+    <p class="quiet">Общая модель идёт с программой: 788 МБ, дообучена на открытых текстах. Свою модель можно дообучить на своих файлах на этом же компьютере.</p>
+  </div>
+</section>
+
+<section class="block" id="can">
+  <h2>Что ещё умеет</h2>
+  <div class="grid2">
+    <div><h3>Заметки</h3><p>Можно подписать файл, кусок текста, папку, дело и связь. Заметка к файлу стоит в выдаче первой. Если файл изменился, она становится неподтверждённой.</p></div>
+    <div><h3>Дела и связи</h3><p>Файлы собираются в дела на полках «Картотека» и «Диск». Каждая связь называет причину: копия, общая сторона, общий срок, редкий контакт, один и тот же секрет.</p></div>
+    <div><h3>Понимание документов</h3><p>По желанию локальная модель определяет тему, суть, стороны и сроки. Каждое поле подтверждается дословной цитатой, которая ищется в тексте. Нет цитаты, нет и поля.</p></div>
+    <div><h3>Требует внимания</h3><p>Один список: ближайшие сроки, сканы без текста, заметки к изменившимся файлам. Всплывающих уведомлений нет.</p></div>
+    <div><h3>Почта</h3><p>Ящик по IMAP, только чтение и только по кнопке. Письма ложатся файлами и разбираются как всё остальное.</p></div>
+    <div><h3>Наблюдение за папками</h3><p>Включается отдельно для каждой папки. Новый файл берётся в работу, когда он дописан. Значок в трее есть, только пока наблюдение идёт.</p></div>
+    <div><h3>Своя модель</h3><p>Дообучение по кнопке на видеокарте NVIDIA от 8 ГБ. Вопросы к вашим файлам пишет локальная модель, результат подключается только с вашего согласия и отключается обратно.</p></div>
+    <div><h3>Журнал запросов</h3><p>Выключен по умолчанию. Хранит запрос, найденные пути и вашу отметку «верно» или «нет». Пока он включён, программа напоминает об этом при каждом запросе.</p></div>
+    <div><h3>Obsidian</h3><p>Заметка на каждый документ в вашем хранилище. Написанное вами выгрузка не трогает.</p></div>
+    <div><h3>Перенос</h3><p>Всё написанное руками выгружается в файл и загружается на другом компьютере.</p></div>
+  </div>
+</section>
+
+<section class="block" id="ideas">
+  <h2>Принципы</h2>
+  <p class="prose">Информация должна быть понятной, защищённой и доступной её владельцу.</p>
+  <div class="grid2">
+    <div><h3>Понятно</h3><p>Любой факт ведёт к файлу и месту, где он написан. Если программа сомневается, она показывает варианты и спрашивает. Двух похожих людей сама она не объединит.</p></div>
+    <div><h3>Защищено</h3><p>Секреты закрываются раньше индекса и модели. Файлы с секретами можно зашифровать AES-256 паролем, запасной токен выдаётся при включении. Если потерять и то, и другое, открыть их будет нечем.</p></div>
+    <div><h3>Под рукой</h3><p>Один файл базы на вашем диске, без аккаунта и сервера. Ответ приходит со ссылкой на источник.</p></div>
+    <div><h3>Сеть только по кнопке</h3><p>Выхода в интернет пять, каждый запускаете вы: модель поиска, модель понимания, сборка для видеокарты, окружение для своей модели, получение почты. Обход файлов и поиск работают без сети.</p></div>
+  </div>
+</section>
+
+<section class="block" id="not-yet">
+  <h2>Чего пока нет</h2>
+  <ul class="ol">
+    <li>Распознавания сканов и фотографий. Скан помечается, к нему можно написать заметку.</li>
+    <li>Шифрования всей базы. Сейчас шифруется текст файлов с секретами. Остальной текст и индекс лежат открыто, иначе не работает поиск.</li>
+    <li>Порога сходства: на бессмысленный запрос смысловой поиск показывает ближайшее из того, что есть.</li>
+    <li>Календаря, загрузки из Obsidian, таблиц и выписок с графиками.</li>
+    <li>Установщика для Linux. Сейчас установщик есть только для Windows.</li>
+    <li>Дообучения на журнале запросов. Отметки пока служат для замера точности, а модель учится на вопросах, которые пишет локальная модель.</li>
+  </ul>
+</section>
+
+<section class="block" id="help">
+  <div class="ask">
+    <h2>Что нужно от вас</h2>
+    <p class="prose">Модель дообучена на открытых текстах и вопросах, написанных другими моделями. Основная проверка шла на базе автора: около шести тысяч файлов, в основном код. Доработки планируется закончить в течение месяца, и до этого нужны настоящие данные.</p>
+    <ol class="ol">
+      <li><b>Большая настоящая свалка.</b> Десятки тысяч файлов, договоры, счета, переписка. Файлы никому отправлять не нужно, всё остаётся у вас.</li>
+      <li><b>Настоящие вопросы.</b> Что вы искали, нашлось ли, на каком месте. Особенно интересны случаи, когда поиск промахнулся.</li>
+      <li><b>Скорость на большой базе.</b> Сколько идёт разбор, где программа замирает, сколько занимает база. От этого зависит, стоит ли переписывать часть модулей на Rust.</li>
+      <li><b>Общее впечатление.</b> Что непонятно с первого раза и чего не хватило.</li>
+    </ol>
+    <p>Если готовы попробовать, напишите автору в Telegram: <a href="https://t.me/BunnyWhiteRR">@BunnyWhiteRR</a>. Программу автор передаст напрямую.</p>
+  </div>
+</section>
+
+<footer>Состояние на 9 ноября 2026 года.</footer>
+</div>
+
+<script>
+(function () {
+'use strict';
+const app = document.getElementById('app');
+const TECH = app.dataset.tech === '1';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+const K = [], H0 = [];
+(function () {
+  let n = 2, c = 0; const frac = x => ((x - Math.floor(x)) * 4294967296) | 0;
+  while (c < 64) {
+    let p = true; for (let i = 2; i * i <= n; i++) if (n % i === 0) { p = false; break; }
+    if (p) { if (c < 8) H0[c] = frac(Math.pow(n, 1 / 2)); K[c] = frac(Math.pow(n, 1 / 3)); c++; }
+    n++;
+  }
+})();
+function sha256(str) {
+  const d = new TextEncoder().encode(str), l = d.length, n = ((l + 8) >> 6) + 1, w = new Int32Array(n * 16);
+  for (let i = 0; i < l; i++) w[i >> 2] |= d[i] << (24 - (i & 3) * 8);
+  w[l >> 2] |= 0x80 << (24 - (l & 3) * 8); w[n * 16 - 1] = l * 8;
+  const r = (x, s) => (x >>> s) | (x << (32 - s)), W = new Int32Array(64); let h = H0.slice();
+  for (let j = 0; j < n; j++) {
+    for (let i = 0; i < 16; i++) W[i] = w[j * 16 + i];
+    for (let i = 16; i < 64; i++) {
+      const a = W[i - 15], e = W[i - 2];
+      W[i] = (W[i - 16] + (r(a, 7) ^ r(a, 18) ^ (a >>> 3)) + W[i - 7] + (r(e, 17) ^ r(e, 19) ^ (e >>> 10))) | 0;
+    }
+    let [a, b, c, e0, e, f, g, x] = h;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (x + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + W[i]) | 0;
+      const t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      x = g; g = f; f = e; e = (e0 + t1) | 0; e0 = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    h = [h[0] + a, h[1] + b, h[2] + c, h[3] + e0, h[4] + e, h[5] + f, h[6] + g, h[7] + x].map(v => v | 0);
+  }
+  return h.map(v => (v >>> 0).toString(16).padStart(8, '0')).join('');
+}
+
+const FORMS = [
+  ['приватный ключ', /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g],
+  ['ключ AWS', /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g],
+  ['токен GitHub', /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g],
+  ['токен Slack', /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/g],
+  ['JWT', /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g],
+];
+const CRED = /(^|[^\w.])([\w.]*(?:password|passwd|passphrase|pwd|secret|token|credential|api[_-]?key|private[_-]?key)[\w.]*)["']?[ \t]*[:=][ \t]*(["']?)([^\s"',;]{4,})/gim;
+const STUB = /^(changeme|change_me|example|test|none|null|true|false|x{3,}|your[_-].*|<.*>|\$\{.*\}|\*+)$/i;
+const CARD = /(^|[^\d.])((?:\d[ -]?){13,19})(?![\d.])/gm;
+function luhn(digits) {
+  if (/^(\d)\1+$/.test(digits)) return false;
+  let s = 0, alt = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let d = +digits[i]; if (alt) { d *= 2; if (d > 9) d -= 9; } s += d; alt = !alt;
+  }
+  return s % 10 === 0;
+}
+function findSecrets(text, isCode) {
+  const out = []; let m;
+  for (const [type, re] of FORMS) { re.lastIndex = 0; while ((m = re.exec(text))) out.push({ start: m.index, end: m.index + m[0].length, type }); }
+  CRED.lastIndex = 0;
+  while ((m = CRED.exec(text))) {
+    const val = m[4];
+    if (STUB.test(val) || /[(){}\[\]]|=>/.test(val) || (isCode && !m[3])) continue;
+    const end = m.index + m[0].length;
+    out.push({ start: end - val.length, end, type: 'пароль или ключ: ' + m[2] });
+  }
+  CARD.lastIndex = 0;
+  while ((m = CARD.exec(text))) {
+    const raw = m[2].replace(/[ -]+$/, ''), digits = raw.replace(/\D/g, '');
+    if (digits.length < 13 || digits.length > 19 || !luhn(digits)) continue;
+    const start = m.index + m[1].length;
+    out.push({ start, end: start + raw.length, type: 'номер карты, прошёл проверку Луна' });
+  }
+  return prune(out);
+}
+function prune(spans) {
+  spans.sort((a, b) => a.start - b.start || b.end - a.end);
+  const out = []; let at = -1;
+  for (const s of spans) if (s.start >= at) { out.push(s); at = s.end; }
+  return out;
+}
+const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+const FACT_RE = [
+  ['email', /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g],
+  ['url', /https?:\/\/[^\s<>"')`]+/g],
+  ['phone', /(?:\+7|\b8)[\s(-]*\d{3}[\s)-]*\d{3}[\s-]*\d{2}[\s-]*\d{2}\b/g],
+  ['date_iso', /\b(\d{4})-(\d{2})-(\d{2})\b/g],
+  ['date_dot', /\b(\d{1,2})[./](\d{1,2})[./](\d{2,4})\b/g],
+  ['date_ru', /(?:^|[^\d])(\d{1,2})\s+(янв|фев|мар|апр|мая|июн|июл|авг|сен|окт|ноя|дек)[а-я]*\.?\s+(\d{4})/gi],
+  ['money', /(\d[\d  ]*(?:[.,]\d{1,2})?)\s*(?:руб(?:лей|ля|\.)?|₽|р\.|usd|\$|eur|€)/gi],
+];
+const pad = n => String(n).padStart(2, '0');
+function findFacts(text, secrets) {
+  const out = []; let m;
+  for (const [kind, re] of FACT_RE) {
+    re.lastIndex = 0;
+    while ((m = re.exec(text))) {
+      let start = m.index, end = m.index + m[0].length, raw = m[0], k = kind, norm = raw;
+      if (kind === 'url') { const clean = raw.replace(/[.,;:!?*]+$/, ''); end = start + clean.length; raw = clean; }
+      if (kind === 'date_iso') { k = 'date'; }
+      if (kind === 'date_dot') {
+        if (m[3].length === 3) continue;
+        const y = m[3].length === 2 ? (+m[3] < 70 ? '20' : '19') + m[3] : m[3];
+        if (+m[2] > 12 || +m[1] > 31) continue;
+        k = 'date'; norm = y + '-' + pad(m[2]) + '-' + pad(m[1]);
+      }
+      if (kind === 'date_ru') {
+        const skip = raw.search(/\d/); start += skip; raw = raw.slice(skip);
+        k = 'date'; norm = m[3] + '-' + pad(MONTHS.indexOf(m[2].toLowerCase()) + 1) + '-' + pad(m[1]);
+      }
+      if (kind === 'phone') norm = '+7' + raw.replace(/\D/g, '').slice(-10);
+      if (kind === 'money') {
+        if (start > 0 && text[start - 1] === '%') continue;
+        const v = parseFloat(m[1].replace(/[  ]/g, '').replace(',', '.'));
+        if (isNaN(v)) continue; norm = v.toFixed(2);
+      }
+      if (secrets.some(s => s.start < end && start < s.end)) continue;
+      out.push({ start, end, kind: k, raw, norm });
+    }
+  }
+  return prune(out);
+}
+const MIN_PIECE = 80;
+function cut(text, isCode) {
+  const pieces = [];
+  if (isCode) {
+    const re = /^(?:async\s+function|function|def|class|public\s+class|export\s+\w+|fn|func)\s+([\w$]+)/gm;
+    const heads = []; let m;
+    while ((m = re.exec(text))) heads.push({ at: m.index, name: m[1] });
+    let from = 0, name = null;
+    const push = (a, b, n) => { const t = text.slice(a, b).replace(/\s+$/, ''); if (t.trim()) pieces.push({ start: a, end: a + t.length, name: n }); };
+    for (const h of heads) { push(from, h.at, name); from = h.at; name = h.name; }
+    push(from, text.length, name);
+    return pieces;
+  }
+  const gap = /\r?\n[ \t]*\r?\n/g; let at = 0, m, spans = [];
+  while ((m = gap.exec(text))) { spans.push([at, m.index]); at = m.index + m[0].length; }
+  spans.push([at, text.length]);
+  let cur = null;
+  for (const [a, b] of spans) {
+    if (b <= a || !text.slice(a, b).trim()) continue;
+    if (cur && cur[1] - cur[0] < MIN_PIECE) cur[1] = b;
+    else { if (cur) pieces.push({ start: cur[0], end: cur[1], name: null }); cur = [a, b]; }
+  }
+  if (cur) pieces.push({ start: cur[0], end: cur[1], name: null });
+  return pieces;
+}
+function paint(text, from, to, spans, fn) {
+  let h = '', p = from;
+  for (const s of spans) {
+    if (s.end <= from || s.start >= to || s.start < p) continue;
+    h += esc(text.slice(p, s.start)) + fn(s, text.slice(s.start, s.end)); p = s.end;
+  }
+  return h + esc(text.slice(p, to));
+}
+const plate = s => '<span class="plate" title="' + esc(s.type) + '" aria-label="значение закрыто">••••••••</span>';
+const secMark = (s, t) => '<mark class="sec" title="' + esc(s.type) + '">' + esc(t) + '</mark>';
+const KIND_RU = { date: 'дата', money: 'сумма', phone: 'телефон', email: 'почта', url: 'ссылка' };
+const factMark = (s, t) => '<mark class="f-' + s.kind + '" title="' + KIND_RU[s.kind] + ': ' + esc(s.norm) + '">' + esc(t) + '</mark>';
+window.__tess = { sha256, findSecrets, findFacts, cut, luhn };
+
+const SAMPLES = [
+  { id: 'doc', tab: 'договор.docx', path: 'Работа/Хостинг/договор.docx', code: false,
+    raw: '<w:p><w:r><w:t>Арендная пл</w:t></w:r>\n<w:r><w:rPr><w:b/></w:rPr><w:t>ата</w:t></w:r>\n<w:r><w:t> составляет 30000 руб. …</w:t></w:r></w:p>',
+    rawNote: 'Word разрывает слово посреди буквы, если внутри сменилось начертание. Части склеиваются без пробела.',
+    text: 'Договор аренды выделенного сервера № 14\n\nАрендная плата составляет 30000 руб. в месяц, оплата до 5 числа. Договор действует с 01.02.2024 по 31 января 2025.\n\nКонтакты арендодателя: +7 495 123-45-67, billing@host.example\n\nКарта для возврата: 4111 1111 1111 1111' },
+  { id: 'env', tab: '.env', path: 'Проекты/panel/.env', code: false,
+    text: '# Настройки панели\nDB_HOST=db.local\nDB_PASSWORD=Zx9-demo-Qm41\nBOT_TOKEN=7300000000:AAdemoDemoDemoDemoDemoDemo\nSESSION_SECRET=changeme\nSUPPORT_URL=https://host.example/help' },
+  { id: 'code', tab: 'auth.py', path: 'Проекты/backend/auth.py', code: true,
+    text: 'import hashlib\n\nDB_PASSWORD = "Zx9-demo-Qm41"\n\ndef make_salt():\n    # Соль для хешей паролей игроков\n    return "abc"\n\nclass SessionStore:\n    """Хранит активные сессии игроков."""\n\n    def __init__(self, token: str):\n        self.token = token' },
+  { id: 'mail', tab: 'письмо.eml', path: 'Почта/INBOX/1042.eml', code: false,
+    raw: 'From: =?UTF-8?B?0KDQsNGB0YfRkdGC0L3Ri9C5?= <billing@host.example>\nSubject: =?UTF-8?B?0KHRh9GR0YIg4oSWIDIzMQ==?=\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: base64\n\n0KHRh9GR0YIg4oSWIDIzMSDQvdCwIDQ1MDAg0YDRg9CxLi4u',
+    rawNote: 'Заголовки и тело раскодируются. Вложения становятся обычными файлами внутри письма.',
+    text: 'От: Расчётный отдел <billing@host.example>\nТема: Счёт № 231\n\nСчёт № 231 на 4500 руб. просим оплатить до 15.11.2026. Вопросы по телефону 8 (495) 123-45-67.' },
+  { id: 'scan', tab: 'скан.pdf', path: 'Архив/скан_0231.pdf', code: false, scan: true,
+    raw: 'PDF, 3 страницы.\nНа каждой странице одна картинка.\nТекстового слоя нет.', text: '' },
+  { id: 'own', tab: 'Свой текст', path: 'Ваш текст', code: false,
+    text: 'Вставьте сюда что угодно. Например: оплата 12 500 руб. до 01.12.2026, телефон +7 900 000-00-00, password=Kx81-demo-z.' },
+];
+let sample = SAMPLES[0], step = 2, timer = null;
+
+function analyse(s) {
+  const text = s.text, secrets = findSecrets(text, s.code), facts = findFacts(text, secrets), pieces = cut(text, s.code);
+  return { text, secrets, facts, pieces, hash: sha256(text || s.raw || ''), bytes: new TextEncoder().encode(text || s.raw || '').length };
+}
+const pieceHead = (i, p) => '<div class="piece-h"><b>кусок ' + (i + 1) + (p.name ? ' · ' + esc(p.name) : '') + '</b><span>символы ' + p.start + '–' + p.end + '</span></div>';
+const none = t => '<p class="quiet">' + t + '</p>';
+const empty = 'Текста нет, дальше по ленте идти нечему.';
+
+const STAGES = [
+  { name: 'Файл', title: 'Файл опознаётся по содержимому',
+    lead: 'Программа считает хеш SHA-256. По нему видно, встречалось ли такое содержимое: копия и неизменившийся файл второй раз не разбираются.',
+    tech: '<code>index.py</code>: обход корней, образцы отсева применяются до хеша. Таблицы <code>roots</code>, <code>files</code>, <code>versions</code>, <code>blobs</code>. Инвариант 1 (оригиналы только читаются), инвариант 5 (идемпотентность по sha256).',
+    render(a) { return {
+      in: '<div class="rows"><div class="row2"><span>путь</span><span>' + esc(sample.path) + '</span></div><div class="row2"><span>размер</span><span>' + a.bytes + ' байт</span></div></div>',
+      out: '<div class="rows"><div class="row2"><span>sha-256</span><span>' + a.hash + '</span></div><div class="row2"><span>решение</span><span>новое содержимое, разбираем</span></div></div>',
+    }; } },
+  { name: 'Текст', title: 'Из файла достаётся текст',
+    lead: 'У каждого формата свой разбор: PDF, Word, PowerPoint, письма, содержимое архивов, код и конфиги. Кодировка определяется автоматически, русские файлы в cp1251 читаются.',
+    tech: '<code>extract.py</code>, <code>archive.py</code>, <code>office.py</code>. Без текстового слоя: <code>blobs.extract_error = "ocr"</code>. Предел архива: отдаётся ничего, а не первые триста файлов.',
+    render(a) {
+      if (sample.scan) return { in: '<pre class="txt">' + esc(sample.raw) + '</pre>',
+        out: '<p>Текста нет. Файл помечается как скан, который нужно распознать, и попадает в список «Требует внимания».</p><p class="quiet">Распознавания пока нет. К такому файлу можно написать заметку, она ищется наравне с текстом.</p>' };
+      return { in: '<pre class="txt">' + esc(sample.raw || a.text) + '</pre>' + (sample.rawNote ? '<p class="quiet">' + esc(sample.rawNote) + '</p>' : ''),
+        out: '<pre class="txt">' + esc(a.text) + '</pre>' };
+    } },
+  { name: 'Секреты', title: 'Сканер находит пароли, ключи и номера карт',
+    lead: 'Этот шаг стоит раньше всех остальных, чтобы индекс и модель значений не видели. Среди находок хранятся только тип и место. Полный текст файла лежит в базе отдельно, его можно зашифровать.',
+    tech: '<code>rules.find_secrets(text, lang)</code>. Таблица <code>secrets</code>: хеш, тип, диапазон. Заглушку ставит <code>index._store</code>. Значение, узнанное в одном файле, ищется и в остальных (<code>repeat:&lt;тип&gt;</code>). Инварианты 3 и 4.',
+    render(a) {
+      if (!a.text) return { in: none(empty), out: none(empty) };
+      const list = a.secrets.length ? '<div class="rows">' + a.secrets.map(s => '<div>' + esc(s.type) + '</div>').join('') + '</div>' : none('Секретов в этом тексте не нашлось.');
+      let extra = '';
+      if (sample.id === 'env') extra = '<p class="quiet">SESSION_SECRET=changeme остался открытым: это заглушка, а не пароль.</p>';
+      if (sample.id === 'code') extra = '<p class="quiet">token: str и self.token = token остались открытыми: в коде значение пишут в кавычках, а здесь имя типа и переменная.</p>';
+      return { in: '<pre class="txt">' + paint(a.text, 0, a.text.length, a.secrets, secMark) + '</pre>',
+        out: '<pre class="txt">' + paint(a.text, 0, a.text.length, a.secrets, plate) + '</pre>' + list + extra };
+    } },
+  { name: 'Куски', title: 'Текст делится на куски',
+    lead: 'Код режется по функциям и классам, остальное по абзацам. Короткие абзацы склеиваются. Кусок помнит своё место в исходнике с точностью до символа.',
+    tech: '<code>chunk.py</code>: tree-sitter, 19 грамматик. Смещения в символах, а не в байтах (<code>_OffsetMap</code>, инвариант 2). Таблица <code>chunks</code>, текст с заглушкой <code>••••••••</code>.',
+    render(a) {
+      if (!a.text) return { in: none(empty), out: none(empty) };
+      return { in: '<pre class="txt">' + paint(a.text, 0, a.text.length, a.secrets, plate) + '</pre>',
+        out: a.pieces.map((p, i) => '<div class="piece">' + pieceHead(i, p) + '<pre class="txt">' + paint(a.text, p.start, p.end, a.secrets, plate) + '</pre></div>').join('') };
+    } },
+  { name: 'Факты', title: 'Правила вынимают даты, суммы и контакты',
+    lead: 'Каждое значение приводится к единому виду и хранит ссылку на свой кусок. Цвета те же, что на карточках в программе.',
+    tech: '<code>rules._FACT_PATTERNS</code> и отсевы: дробные числа, версии, строки формата. Таблица <code>facts</code>, провенанс обязателен (инвариант 6), <code>valid_from</code>/<code>valid_to</code> заведены заранее (инвариант 10).',
+    render(a) {
+      if (!a.text) return { in: none(empty), out: none(empty) };
+      const spans = prune(a.facts.concat(a.secrets.map(s => Object.assign({ kind: 'secret' }, s))));
+      const fn = (s, t) => s.kind === 'secret' ? plate(s) : factMark(s, t);
+      return { in: '<pre class="txt">' + paint(a.text, 0, a.text.length, spans, fn) + '</pre>',
+        out: a.facts.length ? '<div class="rows">' + a.facts.map(f => '<div class="row2"><span>' + KIND_RU[f.kind] + '</span><span>' + esc(f.raw) + (f.norm !== f.raw ? ' = ' + esc(f.norm) : '') + '</span></div>').join('') + '</div>' : none('Фактов в этом тексте нет.') };
+    } },
+  { name: 'Индекс', title: 'Каждый кусок получает два адреса',
+    lead: 'Индекс слов отвечает на точные запросы. Вектор из 768 чисел отражает смысл куска, его считает модель у вас на компьютере. Значения секретов сюда не попадают.',
+    tech: 'Триггеры пишут в <code>chunks_fts</code> (FTS5, BM25). <code>embed.py</code>: окна кусков, префикс <code>passage:</code>, ONNX Runtime, DirectML или процессор, int8 (<code>embed.VECTOR_SCALE</code>), <code>chunks_vec</code> через sqlite-vec. Запускается отдельно от обхода.',
+    render(a) {
+      if (!a.text) return { in: none(empty), out: none(empty) };
+      const clean = p => { let t = '', at = p.start; for (const s of a.secrets) { if (s.end <= p.start || s.start >= p.end) continue; t += a.text.slice(at, s.start) + ' '; at = s.end; } return t + a.text.slice(at, p.end); };
+      const out = a.pieces.map((p, i) => {
+        const c = clean(p), words = Array.from(new Set(c.toLowerCase().match(/[\p{L}\p{N}_]+/gu) || [])), hex = sha256(c), bars = [];
+        for (let k = 0; k < 64; k++) { const v = parseInt(hex.substr(k % 62, 2), 16) ^ (k * 37 & 255); bars.push('<i style="height:' + (18 + v / 255 * 82).toFixed(0) + '%"></i>'); }
+        return '<div class="piece">' + pieceHead(i, p) + '<div class="words">' + esc(words.slice(0, 12).join(' · ')) + (words.length > 12 ? ' · …' : '') + '</div><div class="bars" aria-hidden="true">' + bars.join('') + '</div></div>';
+      }).join('');
+      return { in: '<div class="rows"><div class="row2"><span>кусков</span><span>' + a.pieces.length + '</span></div></div><p class="quiet">Полоски справа условные: настоящие 768 чисел считает модель, в браузере её нет. Слова настоящие.</p>', out };
+    } },
+  { name: 'База', title: 'Всё ложится в один файл и сохраняет источник',
+    lead: 'База состоит из одного файла SQLite на вашем диске. У любого факта можно пройти назад до файла и места, поэтому программа всегда показывает, откуда взят ответ.',
+    tech: '<code>db.py</code>, схема 8. Связи между файлами считает <code>links.py</code>: копия, общая сторона и срок, тот же секрет, редкий контакт (значение встречается не больше чем в <code>RARE = 5</code> файлах). Даты и суммы файлы не связывают.',
+    render(a) {
+      const counts = '<div class="rows"><div class="row2"><span>кусков</span><span>' + a.pieces.length + '</span></div><div class="row2"><span>фактов</span><span>' + a.facts.length + '</span></div><div class="row2"><span>секретов</span><span>' + a.secrets.length + ', без значений</span></div></div>';
+      if (!a.text) return { in: none('Запись о файле есть, текста нет.'), out: '<div class="piece"><div class="piece-h"><b>файл</b></div><div class="words">' + esc(sample.path) + '</div></div>' };
+      const f = a.facts[0], p = f ? a.pieces.findIndex(x => f.start >= x.start && f.start < x.end) : 0, piece = a.pieces[p];
+      const box = (t, v) => '<div class="piece"><div class="piece-h"><b>' + t + '</b></div><div class="words">' + v + '</div></div>', arrow = '<div class="arrow">взято из</div>';
+      let chain = f ? box(KIND_RU[f.kind], esc(f.raw)) + arrow : '';
+      chain += box('кусок ' + (p + 1), 'символы ' + piece.start + '–' + piece.end) + arrow + box('версия', a.hash.slice(0, 16) + '…') + arrow + box('файл', esc(sample.path));
+      let extra = '';
+      if (sample.id === 'doc' || sample.id === 'mail') extra = '<p class="quiet">Тот же телефон есть в другом файле, поэтому программа свяжет их и назовёт причину: «редкий контакт». Пример.</p>';
+      return { in: counts + extra, out: '<div class="chain">' + chain + '</div>' };
+    } },
+];
+
+function renderBelt() {
+  const belt = $('belt'); if (!belt) return;
+  $('tabs').innerHTML = SAMPLES.map(s => '<button class="tab" data-s="' + s.id + '" aria-pressed="' + (s === sample) + '">' + esc(s.tab) + '</button>').join('');
+  $('stations').innerHTML = STAGES.map((s, i) => '<li class="' + (i < step ? 'done' : i === step ? 'now' : '') + '"><button class="st" data-i="' + i + '" aria-current="' + (i === step ? 'step' : 'false') + '"><b>' + (i + 1) + '</b>' + s.name + '</button></li>').join('');
+  const a = analyse(sample), st = STAGES[step], r = st.render(a);
+  $('st-title').textContent = st.title;
+  $('st-lead').textContent = st.lead;
+  $('st-in').innerHTML = r.in; $('st-out').innerHTML = r.out;
+  const t = $('st-tech'); if (t) t.innerHTML = st.tech;
+  $('own-wrap').hidden = sample.id !== 'own';
+  $('st-prev').disabled = step === 0; $('st-next').disabled = step === STAGES.length - 1;
+  $('st-play').textContent = timer ? 'Остановить' : 'Прогнать с начала';
+}
+function stop() { if (timer) { clearInterval(timer); timer = null; } }
+function initBelt() {
+  if (!$('belt')) return;
+  $('own').value = SAMPLES[5].text;
+  $('belt').addEventListener('click', e => {
+    const tab = e.target.closest('.tab'), st = e.target.closest('.st');
+    if (tab) { stop(); sample = SAMPLES.find(s => s.id === tab.dataset.s); renderBelt(); }
+    if (st) { stop(); step = +st.dataset.i; renderBelt(); }
+  });
+  $('st-prev').onclick = () => { stop(); step = Math.max(0, step - 1); renderBelt(); };
+  $('st-next').onclick = () => { stop(); step = Math.min(STAGES.length - 1, step + 1); renderBelt(); };
+  $('st-play').onclick = () => {
+    if (timer) { stop(); renderBelt(); return; }
+    step = 0;
+    timer = setInterval(() => { if (step >= STAGES.length - 1) { stop(); renderBelt(); return; } step++; renderBelt(); }, 2600);
+    renderBelt();
+  };
+  $('own').addEventListener('input', e => { SAMPLES[5].text = e.target.value; renderBelt(); });
+  renderBelt();
+}
+
+function drawGraph(host, g) {
+  const lines = g.nodes.map(n => {
+    const cx = n.x + n.w / 2, ts = n.lines.map((t, i) => '<text x="' + cx + '" y="' + (n.y + n.h / 2 + (i - (n.lines.length - 1) / 2) * 17 + 4) + '" text-anchor="middle"' + (i ? ' class="sub"' : '') + '>' + esc(t) + '</text>').join('');
+    return '<g class="g-node' + (g.click ? ' click' : '') + '" data-n="' + n.id + '"' + (g.click ? ' tabindex="0" role="button" aria-label="' + esc(n.lines[0]) + '"' : '') + '><rect x="' + n.x + '" y="' + n.y + '" width="' + n.w + '" height="' + n.h + '" rx="9"/>' + ts + '</g>';
+  }).join('');
+  const edges = g.edges.map(e => '<polyline class="g-edge" data-e="' + e.id + '" points="' + e.pts.map(p => p.join(',')).join(' ') + '" marker-end="url(#' + g.id + '-a)"/>' + (e.label ? '<text class="g-label" data-l="' + e.id + '" x="' + e.lx + '" y="' + e.ly + '"' + (e.end ? ' text-anchor="end"' : '') + '>' + esc(e.label) + '</text>' : '')).join('');
+  host.innerHTML = '<svg viewBox="0 0 ' + g.w + ' ' + g.h + '" role="img" aria-label="' + esc(g.aria) + '"><defs>' +
+    '<marker id="' + g.id + '-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0 0L10 5L0 10z"/></marker>' +
+    '<marker id="' + g.id + '-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="arrowhead-on" d="M0 0L10 5L0 10z"/></marker></defs>' + edges + lines + '</svg>';
+}
+function light(host, g, nodes, edges) {
+  host.querySelectorAll('.g-node').forEach(n => n.classList.toggle('on', nodes.includes(n.dataset.n)));
+  host.querySelectorAll('.g-edge').forEach(e => { const on = edges.includes(e.dataset.e); e.classList.toggle('on', on); e.setAttribute('marker-end', 'url(#' + g.id + (on ? '-b' : '-a') + ')'); });
+  host.querySelectorAll('.g-label').forEach(l => l.classList.toggle('on', edges.includes(l.dataset.l)));
+}
+
+const ROUTE = { id: 'rt', w: 980, h: 300, aria: 'Запрос сначала сверяется с заметками, потом с индексом слов. Если все слова нашлись, выдача идёт по словам. Если нет, отвечают смягчённые слова и модель по очереди.',
+  nodes: [
+    { id: 'q', x: 8, y: 122, w: 96, h: 56, lines: ['Запрос'] },
+    { id: 'note', x: 140, y: 122, w: 130, h: 56, lines: ['Заметки', 'идут первыми'] },
+    { id: 'and', x: 306, y: 122, w: 150, h: 56, lines: ['Все слова', 'в одном куске?'] },
+    { id: 'words', x: 520, y: 22, w: 180, h: 56, lines: ['Индекс слов', 'точное совпадение'] },
+    { id: 'loose', x: 520, y: 122, w: 180, h: 56, lines: ['Смягчённые слова', 'хватит любого'] },
+    { id: 'model', x: 520, y: 222, w: 180, h: 56, lines: ['Модель', 'ближайшие векторы'] },
+    { id: 'turns', x: 742, y: 172, w: 112, h: 56, lines: ['По очереди', 'через строку'] },
+    { id: 'out', x: 884, y: 122, w: 88, h: 56, lines: ['Выдача'] },
+  ],
+  edges: [
+    { id: 'q-n', pts: [[104, 150], [138, 150]] },
+    { id: 'n-a', pts: [[270, 150], [304, 150]] },
+    { id: 'a-w', pts: [[456, 136], [488, 136], [488, 50], [518, 50]], label: 'да', lx: 462, ly: 92 },
+    { id: 'a-l', pts: [[456, 150], [518, 150]], label: 'нет', lx: 492, ly: 144 },
+    { id: 'a-m', pts: [[456, 164], [488, 164], [488, 250], [518, 250]], label: 'нет', lx: 462, ly: 212 },
+    { id: 'w-o', pts: [[700, 50], [928, 50], [928, 120]], label: 'слова совпали', lx: 762, ly: 42 },
+    { id: 'l-t', pts: [[700, 150], [722, 150], [722, 190], [740, 190]] },
+    { id: 'm-t', pts: [[700, 250], [722, 250], [722, 210], [740, 210]] },
+    { id: 't-o', pts: [[854, 200], [928, 200], [928, 180]] },
+  ] };
+const C = {
+  rent: { f: 'договор.docx', t: 'Арендная плата составляет 30000 руб. в месяц, оплата до 5 числа.' },
+  host: { f: 'notes.md', t: 'Договор с хостингом заключён 01.02.2024, оплата 4500 руб. в месяц.' },
+  phone: { f: 'notes.md', t: 'Телефон поддержки +7 495 123-45-67, тикеты отвечают за сутки.' },
+  pass: { f: 'auth.py', t: 'DB_PASSWORD = "<plate>"' },
+  yml: { f: 'server.yml', t: 'max-players: 40' },
+  chat: { f: 'ChatListener.java', t: '// Фильтрует мат в чате. Список слов берётся из конфига.' },
+  scan: { f: 'скан_0231.pdf', t: 'Заметка: акт сверки за март, подписан обеими сторонами.' },
+};
+const QUERIES = [
+  { q: 'оплата 4500', nodes: ['q', 'note', 'and', 'words', 'out'], edges: ['q-n', 'n-a', 'a-w', 'w-o'],
+    hits: [['host', 'по словам']],
+    side: 'Оба слова стоят в одном куске. Это самый надёжный случай, модель не нужна и даже не загружается.' },
+  { q: 'DB_PASSWORD', nodes: ['q', 'note', 'and', 'words', 'out'], edges: ['q-n', 'n-a', 'a-w', 'w-o'],
+    hits: [['pass', 'по словам']],
+    side: 'Строка находится, а значение закрыто: в индексе его нет. Открыть его можно отдельным действием в программе.' },
+  { q: 'телефон поддержка', nodes: ['q', 'note', 'and', 'loose', 'model', 'turns', 'out'], edges: ['q-n', 'n-a', 'a-l', 'a-m', 'l-t', 'm-t', 't-o'],
+    hits: [['phone', 'по словам и смыслу'], ['host', 'по смыслу']],
+    side: 'В файле написано «поддержки», поэтому оба слова вместе не нашлись. В запросе до двух слов первую строку получают слова.' },
+  { q: 'сколько платим за аренду сервера', nodes: ['q', 'note', 'and', 'loose', 'model', 'turns', 'out'], edges: ['q-n', 'n-a', 'a-l', 'a-m', 'l-t', 'm-t', 't-o'],
+    hits: [['rent', 'по смыслу'], ['host', 'по смыслу'], ['yml', 'по смыслу']],
+    side: 'Вопрос своими словами. В длинном запросе первую строку получает смысл. Так идут почти все настоящие вопросы.' },
+  { q: 'акт сверки март', nodes: ['q', 'note', 'and', 'loose', 'model', 'turns', 'out'], edges: ['q-n', 'n-a', 'a-l', 'a-m', 'l-t', 'm-t', 't-o'],
+    hits: [['scan', 'по заметке'], ['host', 'по смыслу']],
+    side: 'Скан без текста нашёлся благодаря заметке. Написанное человеком идёт впереди всего остального.' },
+  { q: 'олол', nodes: ['q', 'note', 'and', 'loose', 'model', 'turns', 'out'], edges: ['q-n', 'n-a', 'a-l', 'a-m', 'l-t', 'm-t', 't-o'], warn: true,
+    hits: [['chat', 'по смыслу'], ['yml', 'по смыслу'], ['phone', 'по смыслу']],
+    side: 'Бессмыслица тоже получает ответ. Модель всегда возвращает ближайшее, даже если всё далеко, а порога сходства пока нет.' },
+];
+function initSearch() {
+  const host = $('route'); if (!host) return;
+  drawGraph(host, ROUTE);
+  let cur = QUERIES[3];
+  const draw = () => {
+    $('q-tabs').innerHTML = QUERIES.map((x, i) => '<button class="tab" data-q="' + i + '" aria-pressed="' + (x === cur) + '">' + esc(x.q) + '</button>').join('');
+    light(host, ROUTE, cur.nodes, cur.edges);
+    $('q-side').className = 'note side' + (cur.warn ? ' warn' : ''); $('q-side').textContent = cur.side;
+    $('q-hits').innerHTML = cur.hits.map(([k, via]) => '<div class="hit"><div class="hit-h"><b>' + esc(C[k].f) + '</b><span>' + via + '</span></div><div class="txt">' + esc(C[k].t).replace('&lt;plate&gt;', '<span class="plate">••••••••</span>') + '</div></div>').join('');
+  };
+  $('q-tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) { cur = QUERIES[+b.dataset.q]; draw(); } });
+  draw();
+}
+
+function initCharts() {
+  document.querySelectorAll('[data-chart]').forEach(el => {
+    const data = JSON.parse(el.dataset.chart); let h = '';
+    for (const g of data) {
+      h += '<div class="c-group">' + esc(g.title) + '<small>' + esc(g.sub) + '</small></div>';
+      for (const r of g.rows) {
+        const [a, b, c] = r.v, fmt = v => v === 100 ? '100' : v.toFixed(1), seg = (w, col, tip, txt) => '<div class="c-seg" tabindex="0" data-tip="' + esc(tip) + '" style="width:' + w + '%;background:var(' + col + ')">' + (txt || '') + '</div>';
+        h += '<div class="c-row"><div class="c-name">' + esc(r.name) + '</div><div class="c-plot">' + [0, 25, 50, 75, 100].map(t => '<div class="c-grid" style="left:' + t + '%"></div>').join('') +
+          '<div class="c-bar" style="width:' + c + '%">' +
+          seg(a / c * 100, '--bar1', r.name + ': первым ' + fmt(a) + '%', a >= 10 ? fmt(a) : '') +
+          seg((b - a) / c * 100, '--bar2', r.name + ': в первой тройке ' + fmt(b) + '%') +
+          ((c - b) > 0 ? seg((c - b) / c * 100, '--bar3', r.name + ': в первой десятке ' + fmt(c) + '%') : '') +
+          '</div>' + (c < 92 ? '<div class="c-end" style="left:' + c + '%">' + fmt(c) + '</div>' : '') + '</div></div>';
+      }
+    }
+    h += '<div class="c-axis"><div></div><div class="c-ticks">' + [0, 25, 50, 75, 100].map(t => '<span style="left:' + t + '%">' + t + (t === 100 ? '%' : '') + '</span>').join('') + '</div></div>';
+    el.innerHTML = h;
+  });
+  const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; document.body.appendChild(tip);
+  const show = (t, x, y) => { tip.textContent = t; tip.hidden = false; const w = tip.offsetWidth; tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, x - w / 2)) + 'px'; tip.style.top = Math.max(8, y - tip.offsetHeight - 10) + 'px'; };
+  document.addEventListener('mousemove', e => { const s = e.target.closest && e.target.closest('[data-tip]'); if (s) show(s.dataset.tip, e.clientX, e.clientY); else tip.hidden = true; });
+  document.addEventListener('focusin', e => { const s = e.target.closest && e.target.closest('[data-tip]'); if (s) { const r = s.getBoundingClientRect(); show(s.dataset.tip, r.left + r.width / 2, r.top); } });
+  document.addEventListener('focusout', () => { tip.hidden = true; });
+}
+
+function initMap() {
+  const host = $('map'); if (!host || !window.TESS_MAP) return;
+  const g = window.TESS_MAP; drawGraph(host, g);
+  const pick = id => {
+    const n = g.nodes.find(x => x.id === id), ed = g.edges.filter(e => e.a === id || e.b === id);
+    light(host, g, [id].concat(ed.map(e => e.a === id ? e.b : e.a)), ed.map(e => e.id));
+    $('map-title').textContent = n.lines[0]; $('map-mods').textContent = n.mods; $('map-text').innerHTML = n.text;
+  };
+  host.addEventListener('click', e => { const n = e.target.closest('.g-node'); if (n) pick(n.dataset.n); });
+  host.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { const n = e.target.closest('.g-node'); if (n) { e.preventDefault(); pick(n.dataset.n); } } });
+  pick('db');
+}
+
+initBelt(); initSearch(); initCharts(); initMap();
+})();
+
+</script>
+</body>
+</html>
